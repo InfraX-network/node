@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from enum import Enum
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class Config(BaseModel):
@@ -84,6 +84,7 @@ class Job(BaseModel):
     id: str
     app_id: str
     eth_address: str
+    meta: dict[str, str] = Field(default_factory=dict)
     time_to_give_up: int | None = None
     state: JobState
     start_ts: int | None
