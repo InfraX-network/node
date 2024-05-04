@@ -122,11 +122,11 @@ def run_job(job: Job):
                 command.extend([f"--{k}" for k in kwargs])
 
         # run the app in the app directory
-        start_time = time.process_time()
+        start_time = time.time()
         process_output = subprocess.run(
             command, cwd=app_path, capture_output=True, check=False
         )
-        end_time = time.process_time()
+        end_time = time.time()
 
         success = True
         error = None
