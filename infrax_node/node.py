@@ -111,15 +111,11 @@ def run_job(job: Job):
 
         command = [".venv/bin/python", "main.py"]
 
-        # add the args and kwargs to the command
-        if args := job.meta.get("args"):
-            command.extend([str(arg) for arg in args])
-
-        if kwargs := job.meta.get("kwargs"):
-            if isinstance(kwargs, dict):
-                command.extend([f"--{k}={v}" for k, v in kwargs.items()])
-            else:
-                command.extend([f"--{k}" for k in kwargs])
+        # add the job arguments, if any
+        kwargs = job.meta.get("kwargs", {})
+        if isinstance(kwargs, dict):
+            for key, value in kwargs.items():
+                command.extend((f"--{key}", value))
 
         # run the app in the app directory
         start_time = time.time()
