@@ -234,4 +234,9 @@ def upload_file(path: Path, root: Path) -> httpx.Response:
         }
         if path.parent == root:
             del files["path"]
-        return httpx.post(url, files=files, verify=False)
+        return httpx.post(
+            url,
+            files=files,
+            headers={"ethaddress": config.node.eth_address},
+            verify=False,
+        )

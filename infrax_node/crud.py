@@ -1,7 +1,4 @@
-from datetime import UTC, datetime
-
 import httpx
-from fastapi import FastAPI
 from loguru import logger
 from pydantic import BaseModel
 
@@ -9,12 +6,11 @@ from .config import config
 from .exceptions import (
     AppFailedToInstallException,
     AppFailedToUninstallException,
-    JobAlreadyExistsException,
     NodeNotFoundException,
     NodeRegistrationFailureException,
 )
 from .store import store
-from .types import App, Config, File, Job, JobState, Node, NodeDef, NodeState, Result
+from .types import App, Config, Job, JobState, Node, NodeDef, NodeState, Result
 
 
 class RegisterDTO(BaseModel):
@@ -33,6 +29,7 @@ def register(config: Config) -> None:
     with httpx.Client(transport=transport) as client:
         response = client.post(
             f"{config.router_url}/node",
+            headers={"ethaddress": config.node.eth_address},
             json=RegisterDTO(
                 ip_address=config.host.ip_address,
                 port=config.host.port,
@@ -49,26 +46,6 @@ def register(config: Config) -> None:
     logger.info(f"Registered with router successfully. Node ID: {node.id}")
 
 
-def create_job(app: FastAPI, job: Job) -> Job:
-    if app.state.job:
-        raise JobAlreadyExistsException("Job already exists")
-    job.last_modified = int(datetime.now(UTC).timestamp())
-    job.state = JobState.WORKING
-    job.start_ts = None
-    app.state.job = job
-    logger.info(f"Job {job.id} created")
-    return job
-
-
-def waiting_job(job: Job) -> None:
-    set_job_state(job, JobState.WORKING)
-
-
-def start_job(job: Job) -> None:
-    job.start_ts = int(datetime.now(UTC).timestamp())
-    set_job_state(job, JobState.WORKING)
-
-
 def set_job_finishing(job: Job) -> None:
     set_job_state(job, JobState.FINISHING)
 
@@ -82,12 +59,6 @@ def set_job_state(job: Job, state: JobState) -> None:
     response = httpx.put(f"{config.router_url}/job/{job.id}", json=job.model_dump())
     response.raise_for_status()
     logger.info(f"Job {job.id} state set to {state.name}")
-
-
-def upload_file(file: File) -> None:
-    response = httpx.post(f"{config.router_url}/file", json=file.model_dump())
-    response.raise_for_status()
-    logger.info(f"File {file.id} uploaded")
 
 
 def upload_result(result: Result) -> None:

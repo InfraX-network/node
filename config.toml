@@ -1,8 +1,8 @@
 router_url = "http://0.0.0.0:8069"
 
 [host]
-external_host = "127.0.0.1"
-local_host = "0.0.0.0"
+external_ip = "127.0.0.1"
+local_ip = "0.0.0.0"
 port = 8420
 local_only = false
 app_dir = "./installed"
