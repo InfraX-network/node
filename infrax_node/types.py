@@ -12,8 +12,7 @@ class Config(BaseModel):
 
 
 class Host(BaseModel):
-    ip_address: str
-    port: int
+    external_port: int
     local_only: bool = False
     app_dir: str
 

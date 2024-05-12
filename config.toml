@@ -1,9 +1,9 @@
-router_url = "http://0.0.0.0:8069"
+router_url = "http://0.0.0.0:8420"
 
 [host]
-external_ip = "127.0.0.1"
+external_port = 80
 local_ip = "0.0.0.0"
-port = 8420
+internal_port = 8069
 local_only = false
 app_dir = "./installed"
 

@@ -14,7 +14,6 @@ from .types import App, Config, Job, JobState, Node, NodeDef, NodeState, Result
 
 
 class RegisterDTO(BaseModel):
-    ip_address: str
     port: int
     node: NodeDef
 
@@ -31,8 +30,7 @@ def register(config: Config) -> None:
             f"{config.router_url}/node",
             headers={"ethaddress": config.node.eth_address},
             json=RegisterDTO(
-                ip_address=config.host.ip_address,
-                port=config.host.port,
+                port=config.host.external_port,
                 node=config.node,
             ).model_dump(),
             timeout=10,

@@ -33,8 +33,7 @@ def load_config(path: Path) -> Config:
     return Config(
         router_url=router_url,
         host=Host(
-            ip_address=host.external_ip,
-            port=host.port,
+            external_port=host.external_port,
             local_only=host.local_only,
             app_dir=host.app_dir,
         ),
