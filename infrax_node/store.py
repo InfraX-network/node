@@ -1,8 +1,6 @@
-from pathlib import Path
-
 from pydantic import BaseModel
 
-from .config import config
+from .node import get_app_directory
 from .types import Job, Node, NodeState
 
 
@@ -13,7 +11,7 @@ class Store(BaseModel):
 
     @property
     def app_ids(self):
-        app_dir = Path(config.host.app_dir)
+        app_dir = get_app_directory()
         return [d.name for d in app_dir.iterdir() if d.is_dir()]
 
 
