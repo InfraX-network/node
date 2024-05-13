@@ -5,11 +5,17 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Python Debugger: Module",
+      "name": "Node",
       "type": "debugpy",
       "request": "launch",
       "module": "uvicorn",
       "args": ["infrax_node.main:app", "--host", "0.0.0.0", "--port", "8069"]
+    },
+    {
+      "name": "Pytest",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest"
     }
   ]
 }

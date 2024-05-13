@@ -13,10 +13,10 @@ from tqdm.contrib.concurrent import thread_map
 from . import crud
 from .config import config
 from .exceptions import AppFailedToInstallException, AppFailedToUninstallException
-from .types import App, File, Job, Result
+from .types import File, Job, Result
 
 
-def install_app(app: App) -> None:  # sourcery skip: extract-method
+def install_app(app_id: str) -> None:  # sourcery skip: extract-method
     """Downloads the app and its dependencies.
     Apps use python 3.10 and pip to install dependencies into a
     virtual environment in the app directory.
@@ -26,13 +26,15 @@ def install_app(app: App) -> None:  # sourcery skip: extract-method
     """
     crud.set_node_busy()
 
+    app = crud.get_app(app_id)
+
     # mkdir the app directory and give read, write, and execute
     # permissions to the current user
     app_path = get_app_directory() / app.id
 
     if app_path.exists():
         logger.info(f"App {app.name} is already installed")
-        crud.add_app(app)
+        crud.add_app(app.id)
         crud.set_node_idle()
         return
 
@@ -54,31 +56,31 @@ def install_app(app: App) -> None:  # sourcery skip: extract-method
             logger.info(f"App {app.name} has no dependencies")
     except Exception as e:
         logger.error(f"Failed to install app {app.name}: {e}")
-        crud.report_failed_app_install(app, AppFailedToInstallException(str(e)))
-    crud.add_app(app)
+        crud.report_failed_app_install(app.id, AppFailedToInstallException(str(e)))
+    crud.add_app(app.id)
     crud.set_node_idle()
 
 
-def uninstall_app(app: App) -> None:
+def uninstall_app(app_id: str) -> None:
     """Removes the app and its dependencies.
 
     Args:
         app (App): the app to remove
     """
     crud.set_node_busy()
-    app_path = get_app_directory() / app.id
+    app_path = get_app_directory() / app_id
     if not app_path.exists():
         crud.set_node_idle()
         return
-    logger.info(f"Uninstalling app {app.name}")
+    logger.info(f"Uninstalling app {app_id}")
     try:
         # remove the app directory, which also removes the virtual environment
         if app_path.exists():
             subprocess.run(["rm", "-rf", app_path])
     except Exception as e:
-        logger.error(f"Failed to uninstall app {app.name}: {e}")
-        crud.report_failed_app_uninstall(app, AppFailedToUninstallException(str(e)))
-    crud.remove_app(app)
+        logger.error(f"Failed to uninstall app {app_id}: {e}")
+        crud.report_failed_app_uninstall(app_id, AppFailedToUninstallException(str(e)))
+    crud.remove_app(app_id)
     crud.set_node_idle()
 
 
@@ -88,6 +90,7 @@ def run_job(job: Job):
     Args:
         job (Job): the job to run
     """
+    crud.set_node_busy()
     logger.info(f"Running job {job.id} with app {job.app_id}")
     app_path = get_app_directory() / job.app_id
     input_path = app_path / "input"
@@ -98,6 +101,7 @@ def run_job(job: Job):
     try:
         if not app_path.exists():
             print(f"App {job.app_id} is not installed")
+            crud.set_node_idle()
             return
 
         # ensure the input and output directories exist

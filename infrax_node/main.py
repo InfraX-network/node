@@ -9,7 +9,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from . import crud, node
 from .config import config
 from .store import store
-from .types import App, Job, NodeState
+from .types import Job, NodeState
 
 logging.basicConfig(level=logging.INFO)
 
@@ -42,26 +42,32 @@ async def fail_on_busy():
         )
 
 
-@app.post("/app", status_code=status.HTTP_200_OK, dependencies=[Depends(fail_on_busy)])
-async def install_app(app: App, _: Request) -> None:
+@app.post(
+    "/app/{app_id}",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(fail_on_busy)],
+)
+async def install_app(app_id: str, _: Request) -> None:
     """
     Set the app to be installed on the node
     """
     # check if the app is already installed
     # if so, return 409
-    if app.id in store.app_ids:
+    if app_id in store.app_ids:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="App is already installed"
         )
 
-    Thread(target=node.install_app, args=(app,), daemon=True).start()
+    Thread(target=node.install_app, args=(app_id,), daemon=True).start()
 
 
 @app.delete(
-    "/app", status_code=status.HTTP_200_OK, dependencies=[Depends(fail_on_busy)]
+    "/app/{app_id}",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(fail_on_busy)],
 )
 async def uninstall_app(
-    app: App,
+    app_id: str,
     _: Request,
 ) -> None:
     """
@@ -69,12 +75,12 @@ async def uninstall_app(
     """
     # check if the app is installed
     # if not, return 404
-    if app.id not in store.app_ids:
+    if app_id not in store.app_ids:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="App is not installed",
         )
-    Thread(target=node.uninstall_app, args=(app,), daemon=True).start()
+    Thread(target=node.uninstall_app, args=(app_id,), daemon=True).start()
 
 
 @app.post(

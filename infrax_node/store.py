@@ -10,9 +10,9 @@ class Store(BaseModel):
     job: Job | None = None
 
     @property
-    def app_ids(self):
+    def app_ids(self) -> set[str]:
         app_dir = get_app_directory()
-        return [d.name for d in app_dir.iterdir() if d.is_dir()]
+        return {d.name for d in app_dir.iterdir() if d.is_dir()}
 
 
 store = Store()

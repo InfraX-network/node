@@ -44,6 +44,20 @@ def register(config: Config) -> None:
     logger.info(f"Registered with router successfully. Node ID: {node.id}")
 
 
+def get_app(app_id: str) -> App:
+    query = "query($app_id: String!) { app(id: $app_id) { id name description meta specId ts lastModified files { id name path } } }"
+    variables = {"app_id": app_id}
+    response = httpx.post(
+        f"{config.router_url}/graphql",
+        headers={"ethaddress": config.node.eth_address},
+        json={"query": query, "variables": variables},
+    )
+    response.raise_for_status()
+    app = App(**response.json()["data"]["app"])
+    logger.info(f"Retrieved app {app_id}")
+    return app
+
+
 def set_job_finishing(job: Job) -> None:
     set_job_state(job, JobState.FINISHING)
 
@@ -73,26 +87,28 @@ def upload_result(result: Result) -> None:
     logger.info(f"Result for job {result.job_id} uploaded")
 
 
-def report_failed_app_install(app: App, error: AppFailedToInstallException) -> None:
+def report_failed_app_install(app_id: str, error: AppFailedToInstallException) -> None:
     app_error_report_dto = AppErrorReportDTO(error=str(error), type="INSTALL_ERROR")
     response = httpx.put(
-        f"{config.router_url}/app/{app.id}",
+        f"{config.router_url}/app/{app_id}",
         headers={"ethaddress": config.node.eth_address},
         json=app_error_report_dto.model_dump(),
     )
     response.raise_for_status()
-    logger.error(f"Failed to install app {app.id}: {error}")
+    logger.error(f"Failed to install app {app_id}: {error}")
 
 
-def report_failed_app_uninstall(app: App, error: AppFailedToUninstallException) -> None:
+def report_failed_app_uninstall(
+    app_id: str, error: AppFailedToUninstallException
+) -> None:
     app_error_report_dto = AppErrorReportDTO(error=str(error), type="UNINSTALL_ERROR")
     response = httpx.put(
-        f"{config.router_url}/app/{app.id}",
+        f"{config.router_url}/app/{app_id}",
         headers={"ethaddress": config.node.eth_address},
         json=app_error_report_dto.model_dump(),
     )
     response.raise_for_status()
-    logger.error(f"Failed to install app {app.id}: {error}")
+    logger.error(f"Failed to install app {app_id}: {error}")
 
 
 def set_node_busy() -> None:
@@ -121,23 +137,23 @@ def set_node_state(state: NodeState) -> None:
     response.raise_for_status()
 
 
-def add_app(app: App) -> None:
+def add_app(app_id: str) -> None:
     if not store.node:
         raise NodeNotFoundException("Node not found")
     response = httpx.put(
-        f"{config.router_url}/node/{store.node.id}/app/{app.id}",
+        f"{config.router_url}/node/{store.node.id}/app/{app_id}",
         headers={"ethaddress": config.node.eth_address},
     )
     response.raise_for_status()
-    logger.info(f"App {app.id} added to node {store.node.id}")
+    logger.info(f"App {app_id} added to node {store.node.id}")
 
 
-def remove_app(app: App) -> None:
+def remove_app(app_id: str) -> None:
     if not store.node:
         raise NodeNotFoundException("Node not found")
     response = httpx.delete(
-        f"{config.router_url}/node/{store.node.id}/app/{app.id}",
+        f"{config.router_url}/node/{store.node.id}/app/{app_id}",
         headers={"ethaddress": config.node.eth_address},
     )
     response.raise_for_status()
-    logger.info(f"App {app.id} removed from node {store.node.id}")
+    logger.info(f"App {app_id} removed from node {store.node.id}")
