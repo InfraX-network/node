@@ -90,20 +90,23 @@ def run_job(job: Job):
     """
     logger.info(f"Running job {job.id} with app {job.app_id}")
     app_path = get_app_directory() / job.app_id
+    input_path = app_path / "input"
+    output_path = app_path / "output"
 
     start_time = 0
     end_time = 0
     try:
         if not app_path.exists():
-            raise ValueError(f"App {job.app_id} is not installed")
+            print(f"App {job.app_id} is not installed")
+            return
 
         # ensure the input and output directories exist
-        input_path = app_path / "input"
-        shutil.rmtree(input_path)
+        if input_path.exists():
+            shutil.rmtree(input_path)
         input_path.mkdir(exist_ok=True)
 
-        output_path = app_path / "output"
-        shutil.rmtree(output_path)
+        if output_path.exists():
+            shutil.rmtree(output_path)
         output_path.mkdir(exist_ok=True)
 
         # download the input files
@@ -152,9 +155,11 @@ def run_job(job: Job):
         if not end_time:
             end_time = time.process_time()
     finally:
-        # remove the input and output directory contents
-        shutil.rmtree(input_path)
-        shutil.rmtree(output_path)
+        # remove the input and output directory contents, if it exists
+        if input_path.exists():
+            shutil.rmtree(input_path)
+        if output_path.exists():
+            shutil.rmtree(output_path)
 
     stdout_str = process_output.stdout.decode() or ""
     stderr_str = process_output.stderr.decode() or ""
@@ -196,7 +201,12 @@ def download_files(files: list[File], path: Path):
     urls = [f"{config.router_url}/file/{f.id}" for f in files]
     # show a progress bar for each file
     responses = thread_map(
-        lambda url: httpx.get(url, follow_redirects=True, verify=False),
+        lambda url: httpx.get(
+            url,
+            follow_redirects=True,
+            verify=False,
+            timeout=10,
+        ),
         urls,
     )
     for url, response in zip(urls, responses):
@@ -212,31 +222,38 @@ def upload_files(paths: list[Path], root: Path) -> list[str]:
 
     Args:
         paths (list[Path]): the paths to the files to upload
-    """
-    responses = thread_map(lambda path: upload_file(path, root), paths)
-    for response in responses:
-        response.raise_for_status()
-    return [response.json()["id"] for response in responses]
-
-
-def upload_file(path: Path, root: Path) -> httpx.Response:
-    """Uploads a file to the router.
-
-    Args:
-        path (Path): the path to the file to upload
+        root (Path): the root directory of the files
     """
     url = f"{config.router_url}/file"
-    content_type = mimetypes.guess_type(path)[0] or "application/octet-stream"
-    with open(path, "rb") as f:
-        files = {
-            "file": (path.name, f, content_type),
-            "path": (None, str(path.relative_to(root)), "text/plain"),
-        }
-        if path.parent == root:
-            del files["path"]
-        return httpx.post(
+
+    files = []
+    for path in paths:
+        if not path.exists() and path.is_file():
+            print(f"File {path} does not exist")
+            continue
+        content_type = mimetypes.guess_type(path)[0] or "application/octet-stream"
+        files.append(
+            ("file", (str(path.relative_to(root)), open(path, "rb"), content_type))
+        )
+    if not files:
+        return []
+    try:
+        response = httpx.post(
             url,
             files=files,
             headers={"ethaddress": config.node.eth_address},
             verify=False,
+            timeout=None,
         )
+        if response.status_code != 201:
+            print("Failed to upload files")
+            print(response.text)
+            return []
+        return [item["id"] for item in response.json()]
+    except Exception as e:
+        print("Failed to upload files")
+        print(e)
+        return []
+    finally:
+        for _, (_, f, _) in files:
+            f.close()

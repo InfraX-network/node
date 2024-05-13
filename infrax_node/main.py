@@ -94,15 +94,3 @@ async def create_job(job: Job, _: Request):
     store.job = job
     Thread(target=node.run_job, args=(job,), daemon=True).start()
     return job.model_dump()
-
-
-# @app.get("/job", response_model=Job)
-# async def get_job(_: Request) -> Job:
-#     if job := store.job_request:
-#         return job
-#     raise HTTPException(status_code=404, detail="No job found")
-
-
-# @app.delete("/job", status_code=status.HTTP_204_NO_CONTENT)
-# async def delete_job(_: Request):
-#     store.job_request = None

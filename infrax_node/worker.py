@@ -1,5 +1,3 @@
-# pytorch stuff to accept job of some format, run, and return result
-
 import logging
 from datetime import datetime
 from multiprocessing import Process, Queue

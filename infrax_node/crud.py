@@ -54,14 +54,20 @@ def set_job_finished(job: Job) -> None:
 
 def set_job_state(job: Job, state: JobState) -> None:
     job.state = state
-    response = httpx.put(f"{config.router_url}/job/{job.id}", json=job.model_dump())
+    response = httpx.put(
+        f"{config.router_url}/job/{job.id}",
+        headers={"ethaddress": config.node.eth_address},
+        json=job.model_dump(),
+    )
     response.raise_for_status()
     logger.info(f"Job {job.id} state set to {state.name}")
 
 
 def upload_result(result: Result) -> None:
     response = httpx.post(
-        f"{config.router_url}/job/{result.job_id}/result", json=result.model_dump()
+        f"{config.router_url}/job/{result.job_id}/result",
+        headers={"ethaddress": config.node.eth_address},
+        json=result.model_dump(),
     )
     response.raise_for_status()
     logger.info(f"Result for job {result.job_id} uploaded")
@@ -70,7 +76,9 @@ def upload_result(result: Result) -> None:
 def report_failed_app_install(app: App, error: AppFailedToInstallException) -> None:
     app_error_report_dto = AppErrorReportDTO(error=str(error), type="INSTALL_ERROR")
     response = httpx.put(
-        f"{config.router_url}/app/{app.id}", json=app_error_report_dto.model_dump()
+        f"{config.router_url}/app/{app.id}",
+        headers={"ethaddress": config.node.eth_address},
+        json=app_error_report_dto.model_dump(),
     )
     response.raise_for_status()
     logger.error(f"Failed to install app {app.id}: {error}")
@@ -79,7 +87,9 @@ def report_failed_app_install(app: App, error: AppFailedToInstallException) -> N
 def report_failed_app_uninstall(app: App, error: AppFailedToUninstallException) -> None:
     app_error_report_dto = AppErrorReportDTO(error=str(error), type="UNINSTALL_ERROR")
     response = httpx.put(
-        f"{config.router_url}/app/{app.id}", json=app_error_report_dto.model_dump()
+        f"{config.router_url}/app/{app.id}",
+        headers={"ethaddress": config.node.eth_address},
+        json=app_error_report_dto.model_dump(),
     )
     response.raise_for_status()
     logger.error(f"Failed to install app {app.id}: {error}")
@@ -104,7 +114,9 @@ def set_node_state(state: NodeState) -> None:
     logger.info(f"Node state set to {state.name}")
     node_state_dto = NodeStateDTO(node_id=store.node.id, state=state)
     response = httpx.put(
-        f"{config.router_url}/node/state", json=node_state_dto.model_dump()
+        f"{config.router_url}/node/state",
+        headers={"ethaddress": config.node.eth_address},
+        json=node_state_dto.model_dump(),
     )
     response.raise_for_status()
 
@@ -112,7 +124,10 @@ def set_node_state(state: NodeState) -> None:
 def add_app(app: App) -> None:
     if not store.node:
         raise NodeNotFoundException("Node not found")
-    response = httpx.put(f"{config.router_url}/node/{store.node.id}/app/{app.id}")
+    response = httpx.put(
+        f"{config.router_url}/node/{store.node.id}/app/{app.id}",
+        headers={"ethaddress": config.node.eth_address},
+    )
     response.raise_for_status()
     logger.info(f"App {app.id} added to node {store.node.id}")
 
@@ -120,6 +135,9 @@ def add_app(app: App) -> None:
 def remove_app(app: App) -> None:
     if not store.node:
         raise NodeNotFoundException("Node not found")
-    response = httpx.delete(f"{config.router_url}/node/{store.node.id}/app/{app.id}")
+    response = httpx.delete(
+        f"{config.router_url}/node/{store.node.id}/app/{app.id}",
+        headers={"ethaddress": config.node.eth_address},
+    )
     response.raise_for_status()
     logger.info(f"App {app.id} removed from node {store.node.id}")

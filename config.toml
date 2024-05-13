@@ -1,7 +1,7 @@
 router_url = "http://0.0.0.0:8420"
 
 [host]
-external_port = 80
+external_port = 8069
 local_ip = "0.0.0.0"
 internal_port = 8069
 local_only = false
