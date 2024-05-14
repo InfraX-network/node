@@ -245,7 +245,7 @@ def upload_files(paths: list[Path], root: Path) -> list[str]:
         response = httpx.post(
             url,
             files=files,
-            headers={"ethaddress": config.node.eth_address},
+            headers={"X-ETH-ADDRESS": config.node.eth_address},
             verify=False,
             timeout=None,
         )

@@ -28,7 +28,7 @@ def register(config: Config) -> None:
     with httpx.Client(transport=transport) as client:
         response = client.post(
             f"{config.router_url}/node",
-            headers={"ethaddress": config.node.eth_address},
+            headers={"X-ETH-ADDRESS": config.node.eth_address},
             json=RegisterDTO(
                 port=config.host.external_port,
                 node=config.node,
@@ -49,7 +49,7 @@ def get_app(app_id: str) -> App:
     variables = {"app_id": app_id}
     response = httpx.post(
         f"{config.router_url}/graphql",
-        headers={"ethaddress": config.node.eth_address},
+        headers={"X-ETH-ADDRESS": config.node.eth_address},
         json={"query": query, "variables": variables},
     )
     response.raise_for_status()
@@ -70,7 +70,7 @@ def set_job_state(job: Job, state: JobState) -> None:
     job.state = state
     response = httpx.put(
         f"{config.router_url}/job/{job.id}",
-        headers={"ethaddress": config.node.eth_address},
+        headers={"X-ETH-ADDRESS": config.node.eth_address},
         json=job.model_dump(),
     )
     response.raise_for_status()
@@ -80,7 +80,7 @@ def set_job_state(job: Job, state: JobState) -> None:
 def upload_result(result: Result) -> None:
     response = httpx.post(
         f"{config.router_url}/job/{result.job_id}/result",
-        headers={"ethaddress": config.node.eth_address},
+        headers={"X-ETH-ADDRESS": config.node.eth_address},
         json=result.model_dump(),
     )
     response.raise_for_status()
@@ -91,7 +91,7 @@ def report_failed_app_install(app_id: str, error: AppFailedToInstallException) -
     app_error_report_dto = AppErrorReportDTO(error=str(error), type="INSTALL_ERROR")
     response = httpx.put(
         f"{config.router_url}/app/{app_id}",
-        headers={"ethaddress": config.node.eth_address},
+        headers={"X-ETH-ADDRESS": config.node.eth_address},
         json=app_error_report_dto.model_dump(),
     )
     response.raise_for_status()
@@ -104,7 +104,7 @@ def report_failed_app_uninstall(
     app_error_report_dto = AppErrorReportDTO(error=str(error), type="UNINSTALL_ERROR")
     response = httpx.put(
         f"{config.router_url}/app/{app_id}",
-        headers={"ethaddress": config.node.eth_address},
+        headers={"X-ETH-ADDRESS": config.node.eth_address},
         json=app_error_report_dto.model_dump(),
     )
     response.raise_for_status()
@@ -131,7 +131,7 @@ def set_node_state(state: NodeState) -> None:
     node_state_dto = NodeStateDTO(node_id=store.node.id, state=state)
     response = httpx.put(
         f"{config.router_url}/node/state",
-        headers={"ethaddress": config.node.eth_address},
+        headers={"X-ETH-ADDRESS": config.node.eth_address},
         json=node_state_dto.model_dump(),
     )
     response.raise_for_status()
@@ -142,7 +142,7 @@ def add_app(app_id: str) -> None:
         raise NodeNotFoundException("Node not found")
     response = httpx.put(
         f"{config.router_url}/node/{store.node.id}/app/{app_id}",
-        headers={"ethaddress": config.node.eth_address},
+        headers={"X-ETH-ADDRESS": config.node.eth_address},
     )
     response.raise_for_status()
     logger.info(f"App {app_id} added to node {store.node.id}")
@@ -153,7 +153,7 @@ def remove_app(app_id: str) -> None:
         raise NodeNotFoundException("Node not found")
     response = httpx.delete(
         f"{config.router_url}/node/{store.node.id}/app/{app_id}",
-        headers={"ethaddress": config.node.eth_address},
+        headers={"X-ETH-ADDRESS": config.node.eth_address},
     )
     response.raise_for_status()
     logger.info(f"App {app_id} removed from node {store.node.id}")
