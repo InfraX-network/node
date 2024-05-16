@@ -162,6 +162,7 @@ case "$1" in
     update)
         git pull || error_exit "Failed to update the repository"
         restart_service
+        status_service
         ;;
     help)
         help_message
