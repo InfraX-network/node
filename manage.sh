@@ -125,6 +125,21 @@ status_service_launchd() {
     launchctl list | grep local.infrax || error_exit "Failed to get the status of the Infrax service"
 }
 
+# display the help message
+help_message() {
+    echo "Manage script for the Infrax project"
+    echo ""
+    echo "Usage: $0 {start|stop|restart|status|update|help}"
+    echo ""
+    echo "Commands:"
+    echo "  start   - Start the Infrax service"
+    echo "  stop    - Stop the Infrax service"
+    echo "  restart - Restart the Infrax service"
+    echo "  status  - Check the status of the Infrax service"
+    echo "  update  - Update the repository and restart the Infrax service"
+    echo "  help    - Display this help message"
+}
+
 # check if the user is root
 if [ "$(id -u)" -ne 0 ]; then
     error_exit "This script must be run as root"
@@ -144,8 +159,15 @@ case "$1" in
     status)
         status_service
         ;;
+    update)
+        git pull || error_exit "Failed to update the repository"
+        restart_service
+        ;;
+    help)
+        help_message
+        ;;
     *)
-        echo "Usage: $0 {start|stop|restart|status}"
+        echo "Usage: $0 {start|stop|restart|status|update|help}"
         exit 1
         ;;
 esac
