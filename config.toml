@@ -1,9 +1,5 @@
 # router_url = "https://api.infrax.network"
-<<<<<<< HEAD
 router_url = "http://0.0.0.0:8421"
-=======
-router_url = "http://0.0.0.0:8420"
->>>>>>> 2128a2b
 
 [host]
 external_port = 8069
