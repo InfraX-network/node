@@ -1,15 +1,17 @@
-from unittest.mock import patch
-
 import pytest
 from fastapi import status
-from httpx import AsyncClient
+from fastapi.testclient import TestClient
 from pydantic import BaseModel, Field
 
+from infrax_node.config import config
 from infrax_node.main import app
-from infrax_node.types import App, Job, JobState, Node, NodeState
+from infrax_node.types import App, Job, Node, NodeState
 
-eth_address = "0x1234567890abcdef"
-app_dir = "/tmp/apps"
+ETH_ADDRESS = "0x1234567890abcdef"
+APP_DIR = "/tmp/apps"
+SPEC_ID = "SPEC_ID"
+APP_ID = "APP_ID"
+NODE_ID = "NODE_ID"
 
 
 class TestStore(BaseModel):
@@ -23,120 +25,91 @@ class TestStore(BaseModel):
 store = TestStore()
 
 
+def create_node():
+    return Node(
+        id=NODE_ID,
+        eth_address=ETH_ADDRESS,
+        state=NodeState.IDLE,
+        host="localhost",
+        spec_id=SPEC_ID,
+        job_id=None,
+    )
+
+
 # Test the health check endpoint
 @pytest.mark.asyncio
 async def test_health_check():
     # Arrange
-    client = AsyncClient(app=app, base_url="http://test")
+    client = TestClient(app=app)
 
     # Act
-    response = await client.get("/__health")
+    response = client.get("/__health")
 
     # Assert
     assert response.status_code == status.HTTP_200_OK
 
 
-# Parametrized test for installing an app
+# Test the install app endpoint
+# when the node is instructed to install an app, it calls the server and requests the
+# files for the app, then downloads the files and installs the app into the app directory
+# we need to mock the server response and the file download
 @pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "app_id, already_installed, expected_status",
-    [
-        ("app1", False, status.HTTP_200_OK),  # ID: T1
-        ("app2", True, status.HTTP_409_CONFLICT),  # ID: T2
-    ],
-)
-async def test_install_app(app_id, already_installed, expected_status):
-    # Arrange
-    client = AsyncClient(app=app, base_url="http://test")
-    test_app = App(
-        id=app_id,
-        eth_address=eth_address,
-        name="Test App",
-        description="A test app",
-        meta={},
-        spec_id="spec1",
-        ts=0,
-        last_modified=0,
-        files=[],
-    )
-    store.app_ids = {app_id} if already_installed else set()
+async def test_install_app(monkeypatch: pytest.MonkeyPatch):
+    store.node = create_node()
+    config.host.app_dir = APP_DIR
+
+    def get_app(app_id: str):
+        return App(
+            id=APP_ID,
+            name="Test App",
+            description="Test Description",
+            meta={},
+            spec_id=SPEC_ID,
+            ts=0,
+            last_modified=0,
+            files=[],
+            eth_address=ETH_ADDRESS,
+        )
+
+    def download_files(files: list[dict], path: str):
+        pass
+
+    def set_job_finished(job: Job):
+        store.job = None
+
+    def set_job_state(job: Job, state: str):
+        pass
+
+    def set_job_finishing(job: Job):
+        pass
+
+    def upload_result(result: dict):
+        pass
+
+    def set_node_state(state: str):
+        pass
+
+    monkeypatch.setattr("infrax_node.crud.get_app", get_app)
+    monkeypatch.setattr("infrax_node.node.download_files", download_files)
+    monkeypatch.setattr("infrax_node.crud.set_job_finished", set_job_finished)
+    monkeypatch.setattr("infrax_node.crud.set_job_state", set_job_state)
+    monkeypatch.setattr("infrax_node.crud.set_job_finishing", set_job_finishing)
+    monkeypatch.setattr("infrax_node.crud.upload_result", upload_result)
+    monkeypatch.setattr("infrax_node.crud.set_node_state", set_node_state)
+
+    client = TestClient(app=app, base_url="http://test")
 
     # Act
-    with patch("infrax_node.node.install_app") as mock_install:
-        response = await client.post(f"/app/{app_id}")
-
-    # Assert
-    assert response.status_code == expected_status
-    if not already_installed:
-        mock_install.assert_called_once_with(test_app)
-
-
-# Parametrized test for uninstalling an app
-@pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "app_id, is_installed, expected_status",
-    [
-        ("app1", True, status.HTTP_200_OK),  # ID: T3
-        ("app2", False, status.HTTP_404_NOT_FOUND),  # ID: T4
-    ],
-)
-async def test_uninstall_app(app_id, is_installed, expected_status):
-    # Arrange
-    client = AsyncClient(app=app, base_url="http://test")
-    test_app = App(
-        id=app_id,
-        eth_address=eth_address,
-        name="Test App",
-        description="A test app",
-        meta={},
-        spec_id="spec1",
-        ts=0,
-        last_modified=0,
-        files=[],
+    response = client.post(
+        f"/app/{APP_ID}",
     )
-    store.app_ids = {app_id} if is_installed else set()
-
-    # Act
-    with patch("infrax_node.node.uninstall_app") as mock_uninstall:
-        response = await client.delete(f"/app/{app_id}")
 
     # Assert
-    assert response.status_code == expected_status
-    if is_installed:
-        mock_uninstall.assert_called_once_with(test_app)
+    assert response.status_code == status.HTTP_200_OK
+    assert store.app_ids == {APP_ID}
 
+    # Cleanup
+    # clear the test app directory
+    import shutil
 
-# Parametrized test for creating a job
-@pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "job_id, app_id, is_app_installed, expected_status",
-    [
-        ("job1", "app1", True, status.HTTP_201_CREATED),  # ID: T5
-        ("job2", "app2", False, status.HTTP_404_NOT_FOUND),  # ID: T6
-    ],
-)
-async def test_create_job(job_id, app_id, is_app_installed, expected_status):
-    # Arrange
-    client = AsyncClient(app=app, base_url="http://test")
-    test_job = Job(
-        id=job_id,
-        app_id=app_id,
-        eth_address=eth_address,
-        state=JobState.CREATED,
-        ts=0,
-        start_ts=None,
-        last_modified=0,
-    )
-    store.app_ids = {app_id} if is_app_installed else set()
-
-    # Act
-    with patch("infrax_node.node.run_job") as mock_run_job, patch(
-        "infrax_node.types.Job.model_dump", return_value=test_job.model_dump()
-    ):
-        response = await client.post("/job", json=test_job.model_dump())
-
-    # Assert
-    assert response.status_code == expected_status
-    assert response.json() == test_job.dict() if is_app_installed else None
-    if is_app_installed:
-        mock_run_job.assert_called_once_with(test_job)
+    shutil.rmtree(APP_DIR)

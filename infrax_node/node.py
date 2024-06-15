@@ -120,25 +120,35 @@ def run_job(job: Job):
 
         # add the job arguments, if any
         kwargs = job.meta.get("kwargs", {})
+
         if isinstance(kwargs, dict):
             for key, value in kwargs.items():
                 command.extend((f"--{key}", value))
 
         # run the app in the app directory
         start_time = time.time()
-        process_output = subprocess.run(
-            command, cwd=app_path, capture_output=True, check=False
+
+        # async live capture the output
+        process = subprocess.Popen(
+            command,
+            cwd=app_path,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
         )
+
+        # wait for the process to finish
+        while process.poll() is None:
+            time.sleep(1)
+
         end_time = time.time()
 
         success = True
         error = None
-        if process_output.returncode != 0:
-            logger.error(
-                f"Job {job.id} failed with exit code {process_output.returncode}"
-            )
+        if process.returncode != 0:
+            logger.error(f"Job {job.id} failed with exit code {process.returncode}")
             success = False
-            error = f"Job failed with exit code {process_output.returncode}"
+            error = f"Job failed with exit code {process.returncode}"
 
         crud.set_job_finishing(job)
 
@@ -165,8 +175,8 @@ def run_job(job: Job):
         if output_path.exists():
             shutil.rmtree(output_path)
 
-    stdout_str = process_output.stdout.decode() or ""
-    stderr_str = process_output.stderr.decode() or ""
+    stdout_str = process.stdout.read() if process.stdout else ""
+    stderr_str = process.stderr.read() if process.stderr else ""
     output = f"{stdout_str}\n{stderr_str}"
 
     result = Result(

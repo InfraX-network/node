@@ -42,6 +42,11 @@ async def fail_on_busy():
         )
 
 
+@app.get("/app")
+async def list_apps() -> list[str]:
+    return list(store.app_ids)
+
+
 @app.post(
     "/app/{app_id}",
     status_code=status.HTTP_200_OK,
@@ -90,6 +95,9 @@ async def uninstall_app(
     dependencies=[Depends(fail_on_busy)],
 )
 async def create_job(job: Job, _: Request):
+    """
+    Create a job on the node
+    """
     # check if the app is installed
     # if not, return 404
     if job.app_id not in store.app_ids:
