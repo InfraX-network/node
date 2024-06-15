@@ -1,4 +1,5 @@
-router_url = "https://api.infrax.network"
+# router_url = "https://api.infrax.network"
+router_url = "http://0.0.0.0:8421"
 
 [host]
 external_port = 8069
@@ -17,12 +18,12 @@ vram = "8GB"
 
 # Available floating point formats on GPU. Use true for supported types, false otherwise.
 [float_types]
-FP80=true
-FP64=true
-FP32=false
-FP16=false
-FP8=false
-FP4=false
-BF16=false
-TF32=false
-NF4=false
+FP80 = false
+FP64 = true
+FP32 = false
+FP16 = false
+FP8 = false
+FP4 = false
+BF16 = false
+TF32 = false
+NF4 = false
