@@ -46,13 +46,26 @@ def install_app(app_id: str) -> None:  # sourcery skip: extract-method
         download_files(app.files, app_path)
 
         # create a virtual environment
+        logger.info(f"Creating virtual environment for app {app.name}")
         subprocess.run(["python", "-m", "venv", app_path / ".venv"])
+        logger.info(f"Virtual environment created for app {app.name}")
 
+        # install app dependencies
         if (app_path / "requirements.txt").exists():
-            # install the app dependencies
-            subprocess.run(
-                [".venv/bin/pip", "install", "-r", app_path / "requirements.txt"]
+            logger.info(
+                f"requirements.txt exists for app {app.name}, installing dependencies"
             )
+            subprocess.run(
+                [
+                    ".venv/bin/pip",
+                    "install",
+                    "-r",
+                    app_path / "requirements.txt",
+                ],
+                cwd=app_path,
+            )
+            logger.info(f"Dependencies installed for app {app.name}")
+        else:
             logger.info(f"App {app.name} has no dependencies")
     except Exception as e:
         logger.error(f"Failed to install app {app.name}: {e}")
@@ -98,9 +111,11 @@ def run_job(job: Job):
 
     start_time = 0
     end_time = 0
+    process = None
+
     try:
         if not app_path.exists():
-            print(f"App {job.app_id} is not installed")
+            logger.error(f"App {job.app_id} is not installed")
             crud.set_node_idle()
             return
 
@@ -116,14 +131,18 @@ def run_job(job: Job):
         # download the input files
         download_files(job.files or [], input_path)
 
-        command = [".venv/bin/python", "main.py"]
+        venv_command = ".venv/bin/python"
+        if not (app_path / venv_command).exists():
+            raise FileNotFoundError(f"{venv_command} does not exist")
+
+        command = [venv_command, "main.py"]
 
         # add the job arguments, if any
         kwargs = job.meta.get("kwargs", {})
 
         if isinstance(kwargs, dict):
             for key, value in kwargs.items():
-                command.extend((f"--{key}", value))
+                command.extend((f"--{key}", str(value)))
 
         # run the app in the app directory
         start_time = time.time()
@@ -153,7 +172,6 @@ def run_job(job: Job):
         crud.set_job_finishing(job)
 
         # ensure the output directory exists
-        output_path = app_path / "output"
         if not output_path.exists():
             output_path.mkdir(exist_ok=True)
 
@@ -167,7 +185,9 @@ def run_job(job: Job):
         error = str(e)
         file_ids = []
         if not end_time:
-            end_time = time.process_time()
+            # end_time = time.process_time() # this may be wrong
+            end_time = time.time()  # swapped to this
+
     finally:
         # remove the input and output directory contents, if it exists
         if input_path.exists():
@@ -175,21 +195,21 @@ def run_job(job: Job):
         if output_path.exists():
             shutil.rmtree(output_path)
 
-    stdout_str = process.stdout.read() if process.stdout else ""
-    stderr_str = process.stderr.read() if process.stderr else ""
-    output = f"{stdout_str}\n{stderr_str}"
+        stdout_str = process.stdout.read() if process and process.stdout else ""
+        stderr_str = process.stderr.read() if process and process.stderr else ""
+        output = f"{stdout_str}\n{stderr_str}"
 
-    result = Result(
-        job_id=job.id,
-        execution_time=end_time - start_time,
-        success=success,
-        error=error,
-        output=output,
-        file_ids=file_ids,
-    )
-    crud.upload_result(result)
-    crud.set_job_finished(job)
-    crud.set_node_idle()
+        result = Result(
+            job_id=job.id,
+            execution_time=end_time - start_time,
+            success=success,
+            error=error,
+            output=output,
+            file_ids=file_ids,
+        )
+        crud.upload_result(result)
+        crud.set_job_finished(job)
+        crud.set_node_idle()
 
 
 def get_app_directory() -> Path:

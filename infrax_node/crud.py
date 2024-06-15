@@ -54,6 +54,9 @@ def get_app(app_id: str) -> App:
     )
     response.raise_for_status()
     app_data = response.json()["data"]["app"]
+    if not app_data:
+        # TODO: check server to see why this would happen...
+        raise Exception(f"Server didn't return app data for {app_id}")
     app = App(
         eth_address=app_data["ethAddress"],
         id=app_data["id"],
@@ -119,7 +122,7 @@ def report_failed_app_uninstall(
         json=app_error_report_dto.model_dump(),
     )
     response.raise_for_status()
-    logger.error(f"Failed to install app {app_id}: {error}")
+    logger.error(f"Failed to uninstall app {app_id}: {error}")
 
 
 def set_node_busy() -> None:
