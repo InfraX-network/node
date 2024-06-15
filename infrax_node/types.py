@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -46,7 +47,7 @@ class App(BaseModel):
     eth_address: str
     name: str | None
     description: str | None
-    meta: dict[str, str] | None = None
+    meta: dict[str, Any] | None = None
     spec_id: str
     ts: int
     last_modified: int
