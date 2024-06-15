@@ -45,7 +45,7 @@ def register(config: Config) -> None:
 
 
 def get_app(app_id: str) -> App:
-    query = "query($app_id: String!) { app(id: $app_id) { id name description meta specId ts lastModified files { id name path } } }"
+    query = "query($app_id: String!) { app(id: $app_id) { ethAddress id name description meta specId ts lastModified files { id name path } } }"
     variables = {"app_id": app_id}
     response = httpx.post(
         f"{config.router_url}/graphql",
@@ -53,7 +53,18 @@ def get_app(app_id: str) -> App:
         json={"query": query, "variables": variables},
     )
     response.raise_for_status()
-    app = App(**response.json()["data"]["app"])
+    app_data = response.json()["data"]["app"]
+    app = App(
+        eth_address=app_data["ethAddress"],
+        id=app_data["id"],
+        name=app_data["name"],
+        description=app_data["description"],
+        meta=app_data["meta"],
+        spec_id=app_data["specId"],
+        ts=app_data["ts"],
+        last_modified=app_data["lastModified"],
+        files=app_data["files"],
+    )
     logger.info(f"Retrieved app {app_id}")
     return app
 
