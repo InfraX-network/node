@@ -45,7 +45,7 @@ def register(config: Config) -> None:
 
 
 def get_app(app_id: str) -> App:
-    query = "query($app_id: String!) { app(id: $app_id) { ethAddress id name description meta specId ts lastModified files { id name path } } }"
+    query = "query($app_id: String!) { app(id: $app_id) { ethAddress id name description meta specId ts lastModified files { id name path size } } }"
     variables = {"app_id": app_id}
     response = httpx.post(
         f"{config.router_url}/graphql",
