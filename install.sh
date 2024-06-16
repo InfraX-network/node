@@ -38,8 +38,12 @@ create_venv_and_install_dependencies() {
 
 read_configuration() {
     echo -e "${GREEN}-${NC} Reading configuration${NC}"
-    host=$(grep 'local_ip' config.toml | cut -d'=' -f2 | tr -d ' "') || error_exit "Failed to read local_ip from config"
-    port=$(grep 'local_port' config.toml | cut -d'=' -f2 | tr -d ' "') || error_exit "Failed to read port from config"
+    host=$(grep 'internal_ip' config.toml | cut -d'=' -f2 | tr -d ' "') || error_exit "Failed to read internal_ip from config"
+    port=$(grep 'internal_port' config.toml | cut -d'=' -f2 | tr -d ' "') || error_exit "Failed to read internal_port from config"
+    # exit if either host or port is empty
+    if [ -z "$host" ] || [ -z "$port" ]; then
+        error_exit "Host or port is empty in the configuration file"
+    fi
 }
 
 create_and_start_service() {
