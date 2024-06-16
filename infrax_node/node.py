@@ -45,7 +45,7 @@ def install_app(app_id: str) -> None:  # sourcery skip: extract-method
 
         # create a virtual environment
         logger.info(f"Creating virtual environment for app {app.name}")
-        subprocess.run(["python", "-m", "venv", app_path / ".venv"])
+        subprocess.run(["python3.11", "-m", "venv", app_path / ".venv"])
         logger.info(f"Virtual environment created for app {app.name}")
 
         download_files(app.files, app_path)
