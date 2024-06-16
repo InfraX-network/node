@@ -51,6 +51,7 @@ def get_app(app_id: str) -> App:
         f"{config.router_url}/graphql",
         headers={"X-ETH-ADDRESS": config.node.eth_address},
         json={"query": query, "variables": variables},
+        verify=False,
     )
     response.raise_for_status()
     app_data = response.json()["data"]["app"]
@@ -83,6 +84,7 @@ def set_job_state(job: Job, state: JobState) -> None:
         f"{config.router_url}/job/{job.id}",
         headers={"X-ETH-ADDRESS": config.node.eth_address},
         json=job.model_dump(),
+        verify=False,
     )
     response.raise_for_status()
     logger.info(f"Job {job.id} state set to {state.name}")
@@ -93,6 +95,7 @@ def upload_result(result: Result) -> None:
         f"{config.router_url}/job/{result.job_id}/result",
         headers={"X-ETH-ADDRESS": config.node.eth_address},
         json=result.model_dump(),
+        verify=False,
     )
     response.raise_for_status()
     logger.info(f"Result for job {result.job_id} uploaded")
@@ -104,6 +107,7 @@ def report_failed_app_install(app_id: str, error: AppFailedToInstallException) -
         f"{config.router_url}/app/{app_id}",
         headers={"X-ETH-ADDRESS": config.node.eth_address},
         json=app_error_report_dto.model_dump(),
+        verify=False,
     )
     response.raise_for_status()
     logger.error(f"Failed to install app {app_id}: {error}")
@@ -117,6 +121,7 @@ def report_failed_app_uninstall(
         f"{config.router_url}/app/{app_id}",
         headers={"X-ETH-ADDRESS": config.node.eth_address},
         json=app_error_report_dto.model_dump(),
+        verify=False,
     )
     response.raise_for_status()
     logger.error(f"Failed to install app {app_id}: {error}")
@@ -144,6 +149,7 @@ def set_node_state(state: NodeState) -> None:
         f"{config.router_url}/node/state",
         headers={"X-ETH-ADDRESS": config.node.eth_address},
         json=node_state_dto.model_dump(),
+        verify=False,
     )
     response.raise_for_status()
 
@@ -154,6 +160,7 @@ def add_app(app_id: str) -> None:
     response = httpx.put(
         f"{config.router_url}/node/{store.node.id}/app/{app_id}",
         headers={"X-ETH-ADDRESS": config.node.eth_address},
+        verify=False,
     )
     response.raise_for_status()
     logger.info(f"App {app_id} added to node {store.node.id}")
@@ -165,6 +172,7 @@ def remove_app(app_id: str) -> None:
     response = httpx.delete(
         f"{config.router_url}/node/{store.node.id}/app/{app_id}",
         headers={"X-ETH-ADDRESS": config.node.eth_address},
+        verify=False,
     )
     response.raise_for_status()
     logger.info(f"App {app_id} removed from node {store.node.id}")

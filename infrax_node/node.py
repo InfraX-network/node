@@ -56,6 +56,9 @@ def install_app(app_id: str) -> None:  # sourcery skip: extract-method
             logger.info(f"App {app.name} has no dependencies")
     except Exception as e:
         logger.error(f"Failed to install app {app.name}: {e}")
+        # clean up the app directory
+        if app_path.exists():
+            shutil.rmtree(app_path)
         crud.report_failed_app_install(app.id, AppFailedToInstallException(str(e)))
     crud.add_app(app.id)
     crud.set_node_idle()
