@@ -92,6 +92,9 @@ def uninstall_app(app_id: str) -> None:
             subprocess.run(["rm", "-rf", app_path])
     except Exception as e:
         logger.error(f"Failed to uninstall app {app_id}: {e}")
+        # clean up the app directory
+        if app_path.exists():
+            shutil.rmtree(app_path)
         crud.report_failed_app_uninstall(app_id, AppFailedToUninstallException(str(e)))
     crud.remove_app(app_id)
     crud.set_node_idle()
