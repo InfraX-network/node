@@ -60,7 +60,7 @@ def install_app(app_id: str) -> None:  # sourcery skip: extract-method
                     ".venv/bin/pip",
                     "install",
                     "-r",
-                    app_path / "requirements.txt",
+                    "requirements.txt",
                 ],
                 cwd=app_path,
             )

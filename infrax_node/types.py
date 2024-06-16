@@ -69,8 +69,9 @@ class Spec(BaseModel):
 
 
 class NodeState(str, Enum):
-    BUSY = "BUSY"
-    IDLE = "IDLE"
+    IDLE = "IDLE"  # ready to accept jobs
+    INSTALLING = "INSTALLING"  # installing app
+    BUSY = "BUSY"  # running a job
 
 
 class JobState(str, Enum):
