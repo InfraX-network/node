@@ -57,10 +57,12 @@ async def install_app(app_id: str, _: Request) -> None:
     Set the app to be installed on the node
     """
     # check if the app is already installed
-    # if so, return 409
+    # if so, return 200
     if app_id in store.app_ids:
+        # respond with 200
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="App is already installed"
+            status_code=status.HTTP_200_OK,
+            detail="App is already installed",
         )
 
     Thread(target=node.install_app, args=(app_id,), daemon=True).start()
