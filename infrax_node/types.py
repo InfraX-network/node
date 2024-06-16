@@ -85,7 +85,7 @@ class Job(BaseModel):
     id: str
     app_id: str
     eth_address: str
-    meta: dict[str, str] = Field(default_factory=dict)
+    meta: dict[str, Any] = Field(default_factory=dict)
     time_to_give_up: int | None = None
     state: JobState
     start_ts: int | None

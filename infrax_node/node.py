@@ -142,10 +142,13 @@ def run_job(job: Job):
 
         # add the job arguments, if any
         kwargs = job.meta.get("kwargs", {})
+        logger.info(f"Running job {job.id} with kwargs {kwargs}")
 
         if isinstance(kwargs, dict):
             for key, value in kwargs.items():
                 command.extend((f"--{key}", str(value)))
+
+        logger.info(f"Running command: {' '.join(command)}")
 
         # run the app in the app directory
         start_time = time.time()
