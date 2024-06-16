@@ -43,12 +43,12 @@ def install_app(app_id: str) -> None:  # sourcery skip: extract-method
     try:
         app_path.mkdir(parents=True, exist_ok=True, mode=0o777)
 
-        download_files(app.files, app_path)
-
         # create a virtual environment
         logger.info(f"Creating virtual environment for app {app.name}")
         subprocess.run(["python", "-m", "venv", app_path / ".venv"])
         logger.info(f"Virtual environment created for app {app.name}")
+
+        download_files(app.files, app_path)
 
         # install app dependencies
         if (app_path / "requirements.txt").exists():
