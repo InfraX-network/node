@@ -6,6 +6,7 @@ from .config import config
 from .exceptions import (
     AppFailedToInstallException,
     AppFailedToUninstallException,
+    AppNotFoundException,
     NodeNotFoundException,
     NodeRegistrationFailureException,
 )
@@ -45,28 +46,25 @@ def register(config: Config) -> None:
 
 
 def get_app(app_id: str) -> App:
-    query = "query($app_id: String!) { app(id: $app_id) { ethAddress id name description meta specId ts lastModified files { id name path size } } }"
-    variables = {"app_id": app_id}
-    response = httpx.post(
-        f"{config.router_url}/graphql",
+    response = httpx.get(
+        f"{config.router_url}/app/{app_id}",
         headers={"X-ETH-ADDRESS": config.node.eth_address},
-        json={"query": query, "variables": variables},
         verify=False,
     )
     response.raise_for_status()
-    app_data = response.json()["data"]["app"]
+    app_data = response.json()
     if not app_data:
         # TODO: check server to see why this would happen...
-        raise Exception(f"Server didn't return app data for {app_id}")
+        raise AppNotFoundException(f"Server didn't return app data for {app_id}")
     app = App(
-        eth_address=app_data["ethAddress"],
+        eth_address=app_data["eth_address"],
         id=app_data["id"],
         name=app_data["name"],
         description=app_data["description"],
         meta=app_data["meta"],
-        spec_id=app_data["specId"],
+        spec_id=app_data["spec_id"],
         ts=app_data["ts"],
-        last_modified=app_data["lastModified"],
+        last_modified=app_data["last_modified"],
         files=app_data["files"],
     )
     logger.info(f"Retrieved app {app_id}")
