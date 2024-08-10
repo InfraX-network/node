@@ -1,8 +1,8 @@
-# router_url = "https://api.infrax.network"
-router_url = "http://0.0.0.0:8420"
+router_url = "https://api.infrax.network"
+# router_url = "http://0.0.0.0:8420"
 
 [host]
-external_port = 8069
+external_port = 80
 internal_ip = "0.0.0.0"
 internal_port = 8420
 local_only = false

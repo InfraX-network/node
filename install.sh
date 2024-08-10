@@ -31,9 +31,9 @@ create_venv_and_install_dependencies() {
         echo -e "${RED}ERROR${NC}: Virtual environment already exists. Please remove it and run the script again."
         exit 1
     fi
-    python3 -m venv .venv || error_exit "Failed to create virtual environment"
+    python3.11 -m venv .venv || error_exit "Failed to create virtual environment"
     source .venv/bin/activate || error_exit "Failed to activate the virtual environment"
-    python3 -m pip install -r requirements.txt || error_exit "Failed to install dependencies"
+    python3.11 -m pip install -r requirements.txt || error_exit "Failed to install dependencies"
 }
 
 read_configuration() {
@@ -77,7 +77,7 @@ Description=InfraX Node service
 
 [Service]
 Type=simple
-ExecStart=$(pwd)/.venv/bin/python3 -m uvicorn infrax_node.main:app --host ${host} --port ${port}
+ExecStart=$(pwd)/.venv/bin/python3.11 -m uvicorn infrax_node.main:app --host ${host} --port ${port}
 WorkingDirectory=$(pwd)
 Restart=always
 
@@ -116,7 +116,7 @@ create_service_file_launchd() {
     <string>local.infrax</string>
     <key>ProgramArguments</key>
     <array>
-        <string>$(pwd)/.venv/bin/python3</string>
+        <string>$(pwd)/.venv/bin/python3.11</string>
         <string>-m</string>
         <string>uvicorn</string>
         <string>infrax_node.main:app</string>
